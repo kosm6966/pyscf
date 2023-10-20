@@ -868,6 +868,8 @@ def _get_j_pass2(mydf, vG, hermi=1, kpts=numpy.zeros((1,3)), verbose=None):
                 vp = numpy.asarray(vp) + numpy.asarray(vpI) * 1j
                 vpI = None
 
+            if cell.basis.lower().startswith('unc'):
+                h_coeff = h_coeff[:vp[0].shape[1],:naoh]
             vp = lib.einsum('nkpq,pi,qj->nkij', vp, h_coeff, t_coeff)
 
             vj_kpts[:,:,idx_h[:,None],idx_h] += vp[:,:,:,:naoh]

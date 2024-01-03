@@ -613,6 +613,8 @@ def decontract_basis(mol, atoms=None, to_cart=False):
 
     aoslices = mol.aoslice_by_atom()
     for ia, (ib0, ib1) in enumerate(aoslices[:,:2]):
+        if ib0 == ib1:
+            continue
         if atoms is not None:
             if isinstance(atoms, str):
                 to_apply = ((atoms == mol.atom_pure_symbol(ia)) or

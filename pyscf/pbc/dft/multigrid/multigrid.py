@@ -482,6 +482,8 @@ def _eval_rhoG(mydf, dm_kpts, hermi=1, kpts=numpy.zeros((1,3)), deriv=0,
                 if hermi == 1:
                     naol, naoh = dms_lh.shape[2:]
                     dms_ht[:,:,:,naoh:] += dms_lh.transpose(0,1,3,2)
+                    if cell.basis.lower().startswith('unc'):
+                        h_coeff = h_coeff[:dms_ht[0].shape[1],:naoh]
                     pgto_dms = lib.einsum('nkij,pi,qj->nkpq', dms_ht, h_coeff, t_coeff)
                     shls_slice = (0, nshells_h, 0, nshells_t)
                     #:rho = eval_rho(t_cell, pgto_dms, shls_slice, 0, 'LDA', kpts,

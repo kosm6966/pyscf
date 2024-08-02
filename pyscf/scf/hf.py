@@ -166,6 +166,8 @@ Keyword argument "init_dm" is replaced by "dm0"''')
 
     fock_last = None
     cput1 = logger.timer(mf, 'initialize scf', *cput0)
+    if getattr(mf, 'with_df', None) is not None and getattr(mf.with_df, 'Times_', None) is not None:
+        mf.with_df.Times_["Init"] += cput1[0]
     for cycle in range(mf.max_cycle):
         dm_last = dm
         last_hf_e = e_tot

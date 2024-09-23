@@ -487,7 +487,14 @@ def get_pp(mydf, kpts=None, max_memory=4000):
         return vppnl * (1./ngrids**2)
 
     for k, kpt in enumerate(kpts):
-        vppnl = vppnl_by_k(kpt)
+        # vppnl = vppnl_by_k(kpt)
+        if mydf.vppnl_ver==0:
+            print("Vppnl from Multigrid v1!")
+            vppnl = vppnl_by_k(kpt)
+        else:
+            print("Vppnl from PP_Int!")
+            vppnl = pseudo.pp_int.get_pp_nl(cell, kpt)       
+
         if gamma_point(kpt):
             vpp[k] = vpp[k].real + vppnl.real
         else:

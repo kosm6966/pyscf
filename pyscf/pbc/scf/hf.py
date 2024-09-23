@@ -649,10 +649,11 @@ class SCF(mol_hf.SCF):
         if kpt is None: kpt = self.kpt
 
         cpu0 = (logger.process_clock(), logger.perf_counter())
-        dm = np.asarray(dm)
-        nao = dm.shape[-1]
+        # dm = np.asarray(dm)
+        # nao = dm.shape[-1]
+        nao = np.asarray(dm).shape[-1]
 
-        if (not omega and kpts_band is None and
+        if (0 and not omega and kpts_band is None and
             # TODO: generate AO integrals with rsjk algorithm
             not self.rsjk and
             (self.exxdiv == 'ewald' or not self.exxdiv) and
@@ -672,7 +673,10 @@ class SCF(mol_hf.SCF):
             vj, vk = self.rsjk.get_jk(dm.reshape(-1,nao,nao), hermi, kpt, kpts_band,
                                       with_j, with_k, omega, exxdiv=self.exxdiv)
         else:
-            vj, vk = self.with_df.get_jk(dm.reshape(-1,nao,nao), hermi, kpt, kpts_band,
+            mo_coeff = getattr(dm, 'mo_coeff', None)
+            mo_occ = getattr(dm, 'mo_occ', None)
+            vj, vk = self.with_df.get_jk(lib.tag_array(dm.reshape(-1,nao,nao), mo_coeff=mo_coeff, mo_occ=mo_occ),
+                                         hermi, kpt, kpts_band,
                                          with_j, with_k, omega, exxdiv=self.exxdiv)
 
         if with_j:

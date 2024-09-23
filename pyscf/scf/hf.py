@@ -36,6 +36,7 @@ from pyscf.scf import chkfile
 from pyscf.scf import dispersion
 from pyscf.data import nist
 from pyscf import __config__
+import time
 
 
 WITH_META_LOWDIN = getattr(__config__, 'scf_analyze_with_meta_lowdin', True)
@@ -136,7 +137,10 @@ Keyword argument "init_dm" is replaced by "dm0"''')
     # Skip SCF iterations. Compute only the total energy of the initial density
     if mf.max_cycle <= 0:
         fock = mf.get_fock(h1e, s1e, vhf, dm)  # = h1e + vhf, no DIIS
+        t0 = time.time()
         mo_energy, mo_coeff = mf.eig(fock, s1e)
+        if getattr(mf, 'with_df', None) is not None and getattr(mf.with_df, 'Times_', None) is not None:
+            mf.with_df.Times_["Diagonalize"] += (time.time() - t0)
         mo_occ = mf.get_occ(mo_energy, mo_coeff)
         return scf_conv, e_tot, mo_energy, mo_coeff, mo_occ
 
@@ -153,7 +157,10 @@ Keyword argument "init_dm" is replaced by "dm0"''')
         # Since the ingredients for the Fock matrix has already been built, we can
         # just go ahead and use it to determine the orthonormal basis vectors.
         fock = mf.get_fock(h1e, s1e, vhf, dm)
+        t0 = time.time()
         _, mf_diis.Corth = mf.eig(fock, s1e)
+        if getattr(mf, 'with_df', None) is not None and getattr(mf.with_df, 'Times_', None) is not None:
+            mf.with_df.Times_["Diagonalize"] += (time.time() - t0)
     else:
         mf_diis = None
 
@@ -167,13 +174,18 @@ Keyword argument "init_dm" is replaced by "dm0"''')
 
     fock_last = None
     cput1 = logger.timer(mf, 'initialize scf', *cput0)
+    if getattr(mf, 'with_df', None) is not None and getattr(mf.with_df, 'Times_', None) is not None:
+        mf.with_df.Times_["Init"] += cput1[0]
     mf.cycles = 0
     for cycle in range(mf.max_cycle):
         dm_last = dm
         last_hf_e = e_tot
 
         fock = mf.get_fock(h1e, s1e, vhf, dm, cycle, mf_diis, fock_last=fock_last)
+        t0 = time.time()
         mo_energy, mo_coeff = mf.eig(fock, s1e)
+        if getattr(mf, 'with_df', None) is not None and getattr(mf.with_df, 'Times_', None) is not None:
+            mf.with_df.Times_["Diagonalize"] += (time.time() - t0)
         mo_occ = mf.get_occ(mo_energy, mo_coeff)
         dm = mf.make_rdm1(mo_coeff, mo_occ)
         vhf = mf.get_veff(mol, dm, dm_last, vhf)
@@ -211,7 +223,10 @@ Keyword argument "init_dm" is replaced by "dm0"''')
     if scf_conv and conv_check:
         # An extra diagonalization, to remove level shift
         #fock = mf.get_fock(h1e, s1e, vhf, dm)  # = h1e + vhf
+        t0 = time.time()
         mo_energy, mo_coeff = mf.eig(fock, s1e)
+        if getattr(mf, 'with_df', None) is not None and getattr(mf.with_df, 'Times_', None) is not None:
+            mf.with_df.Times_["Diagonalize"] += (time.time() - t0)
         mo_occ = mf.get_occ(mo_energy, mo_coeff)
         dm, dm_last = mf.make_rdm1(mo_coeff, mo_occ), dm
         vhf = mf.get_veff(mol, dm, dm_last, vhf)
@@ -2436,7 +2451,10 @@ def _hf1e_scf(mf, *args):
     mf.converged = True
     h1e = mf.get_hcore(mf.mol)
     s1e = mf.get_ovlp(mf.mol)
+    t0 = time.time()
     mf.mo_energy, mf.mo_coeff = mf.eig(h1e, s1e)
+    if getattr(mf, 'with_df', None) is not None and getattr(mf.with_df, 'Times_', None) is not None:
+        mf.with_df.Times_["Diagonalize"] += (time.time() - t0)
     mf.mo_occ = mf.get_occ(mf.mo_energy, mf.mo_coeff)
     mf.e_tot = mf.mo_energy[mf.mo_occ>0][0].real + mf.mol.energy_nuc()
     mf._finalize()

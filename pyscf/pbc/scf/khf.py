@@ -767,7 +767,8 @@ class KRHF(KSCF):
                          'systems.\n  DM is normalized wrt the number '
                          'of electrons %s', ne/nkpts, nelectron/nkpts)
             dm_kpts *= (nelectron / ne).reshape(-1,1,1)
-        return dm_kpts
+        # return dm_kpts
+        return lib.tag_array(dm_kpts,mo_coeff=dm.mo_coeff,mo_occ=dm.mo_occ)
 
     @lib.with_doc(mulliken_meta.__doc__)
     def mulliken_meta(self, cell=None, dm=None, kpts=None, verbose=logger.DEBUG,

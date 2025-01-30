@@ -28,6 +28,7 @@ from pyscf.pbc import tools
 from pyscf.pbc.df.df_jk import _format_dms, _format_kpts_band, _format_jks
 from pyscf.pbc.df.df_jk import _ewald_exxdiv_for_G0
 from pyscf.pbc.lib.kpts_helper import is_zero
+import time
 
 
 def get_j_kpts(mydf, dm_kpts, hermi=1, kpts=np.zeros((1,3)), kpts_band=None):
@@ -48,6 +49,7 @@ def get_j_kpts(mydf, dm_kpts, hermi=1, kpts=np.zeros((1,3)), kpts_band=None):
         vj : (nkpts, nao, nao) ndarray
         or list of vj if the input dm_kpts is a list of DMs
     '''
+    t0 = time.time()
     cell = mydf.cell
     mesh = mydf.mesh
     assert cell.low_dim_ft_type != 'inf_vacuum'
@@ -108,6 +110,7 @@ def get_j_kpts(mydf, dm_kpts, hermi=1, kpts=np.zeros((1,3)), kpts_band=None):
                 aow = np.einsum('xi,x->xi', ao, vR[i,p0:p1])
                 vj_kpts[i,k] += lib.dot(ao.conj().T, aow)
 
+    print("getJ:", round(time.time()-t0, 2), flush=True)
     return _format_jks(vj_kpts, dm_kpts, input_band, kpts)
 
 def get_j_e1_kpts(mydf, dm_kpts, kpts=np.zeros((1,3)), kpts_band=None):
@@ -202,6 +205,7 @@ def get_k_kpts(mydf, dm_kpts, hermi=1, kpts=np.zeros((1,3)), kpts_band=None,
         vk : (nkpts, nao, nao) ndarray
         or list of vj and vk if the input dm_kpts is a list of DMs
     '''
+    t0 = time.time()
     cell = mydf.cell
     mesh = mydf.mesh
     assert cell.low_dim_ft_type != 'inf_vacuum'
@@ -305,6 +309,7 @@ def get_k_kpts(mydf, dm_kpts, hermi=1, kpts=np.zeros((1,3)), kpts_band=None,
     if exxdiv == 'ewald':
         _ewald_exxdiv_for_G0(cell, kpts, dms, vk_kpts, kpts_band=kpts_band)
 
+    print("getK:", round(time.time()-t0, 2), flush=True)
     return _format_jks(vk_kpts, dm_kpts, input_band, kpts)
 
 def get_k_e1_kpts(mydf, dm_kpts, kpts=np.zeros((1,3)), kpts_band=None,

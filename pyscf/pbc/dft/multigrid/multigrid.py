@@ -414,7 +414,7 @@ def get_pp(mydf, kpts=None, max_memory=4000):
     fakemol._bas[0,gto.PTR_EXP  ] = ptr+3
     fakemol._bas[0,gto.PTR_COEFF] = ptr+4
 
-    def vppnl_by_k(kpt):
+    def vppnl_by_k(cell, kpt):
         SPG_lm_aoGs = []
         for ia in range(cell.natm):
             symb = cell.atom_symbol(ia)
@@ -486,14 +486,16 @@ def get_pp(mydf, kpts=None, max_memory=4000):
         SPG_lm_aoGs=None
         return vppnl * (1./ngrids**2)
 
+    if mydf.vppnl_ver==0:
+        print("Vppnl from Multigrid v1!")
+        fn = vppnl_by_k
+    else:
+        print("Vppnl from PP_Int!")
+        fn = pseudo.pp_int.get_pp_nl
+        
     for k, kpt in enumerate(kpts):
         # vppnl = vppnl_by_k(kpt)
-        if mydf.vppnl_ver==0:
-            print("Vppnl from Multigrid v1!")
-            vppnl = vppnl_by_k(kpt)
-        else:
-            print("Vppnl from PP_Int!")
-            vppnl = pseudo.pp_int.get_pp_nl(cell, kpt)       
+        vppnl = fn(cell, kpt)
 
         if gamma_point(kpt):
             vpp[k] = vpp[k].real + vppnl.real

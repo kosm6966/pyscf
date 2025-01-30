@@ -658,16 +658,21 @@ def cell_plus_imgs(cell, nimgs):
     Returns:
         supcell : instance of :class:`Cell`
     '''
+    ncopy = np.asarray(nimgs)*2+1
     a = cell.lattice_vectors()
     Ts = lib.cartesian_prod((np.arange(-nimgs[0], nimgs[0]+1),
                              np.arange(-nimgs[1], nimgs[1]+1),
                              np.arange(-nimgs[2], nimgs[2]+1)))
     Ls = np.dot(Ts, a)
     supcell = cell.copy(deep=False)
-    supcell.a = np.einsum('i,ij->ij', nimgs, a)
+    supcell.a = np.einsum('i,ij->ij', ncopy, a) #### Pretty sure this is a BUG!!!
     supcell.mesh = np.array([(nimgs[0]*2+1)*cell.mesh[0],
                              (nimgs[1]*2+1)*cell.mesh[1],
                              (nimgs[2]*2+1)*cell.mesh[2]])
+    if isinstance(cell.magmom, np.ndarray):
+        supcell.magmom = cell.magmom.tolist() * np.prod(ncopy)
+    else:
+        supcell.magmom = cell.magmom * np.prod(ncopy)
     return _build_supcell_(supcell, cell, Ls)
 
 def _build_supcell_(supcell, cell, Ls):

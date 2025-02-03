@@ -109,8 +109,6 @@ def get_j_kpts(mydf, dm_kpts, hermi=1, kpts=np.zeros((1,3)), kpts_band=None):
             for k, ao in enumerate(ao_ks):
                 aow = np.einsum('xi,x->xi', ao, vR[i,p0:p1])
                 vj_kpts[i,k] += lib.dot(ao.conj().T, aow)
-
-    print("getJ:", round(time.time()-t0, 2), flush=True)
     return _format_jks(vj_kpts, dm_kpts, input_band, kpts)
 
 def get_j_e1_kpts(mydf, dm_kpts, kpts=np.zeros((1,3)), kpts_band=None):
@@ -309,7 +307,6 @@ def get_k_kpts(mydf, dm_kpts, hermi=1, kpts=np.zeros((1,3)), kpts_band=None,
     if exxdiv == 'ewald':
         _ewald_exxdiv_for_G0(cell, kpts, dms, vk_kpts, kpts_band=kpts_band)
 
-    print("getK:", round(time.time()-t0, 2), flush=True)
     return _format_jks(vk_kpts, dm_kpts, input_band, kpts)
 
 def get_k_e1_kpts(mydf, dm_kpts, kpts=np.zeros((1,3)), kpts_band=None,

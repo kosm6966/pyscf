@@ -203,7 +203,6 @@ def get_k_kpts(mydf, dm_kpts, hermi=1, kpts=np.zeros((1,3)), kpts_band=None,
         vk : (nkpts, nao, nao) ndarray
         or list of vj and vk if the input dm_kpts is a list of DMs
     '''
-    t0 = time.time()
     cell = mydf.cell
     mesh = mydf.mesh
     assert cell.low_dim_ft_type != 'inf_vacuum'
@@ -298,6 +297,21 @@ def get_k_kpts(mydf, dm_kpts, hermi=1, kpts=np.zeros((1,3)), kpts_band=None,
             for i in range(nset):
                 vk_kpts[i,k1] += weight * lib.dot(vR_dm[i], ao1T.T)
         t1 = logger.timer_debug1(mydf, 'get_k_kpts: make_kpt (%d,*)'%k2, *t1)
+
+    # ao2 = np.asarray(myisdf._numint.eval_ao(cell, coords)[0].T, order='C')
+    # ao1 = ao2 * 1.
+    # naoj = ao2.shape[0]
+    # ao_dms = lib.dot(dms, ao2 )
+
+    # rho1 = np.einsum('ig,jg->ijg', ao1, ao2)
+    # vG = tools.fft(rho1.reshape(-1,ngrids), mesh)
+    # vG *= coulG
+    # vR = tools.ifft(vG, mesh).reshape(naoj, naoj, ngrids)
+    # if vR_dm.dtype == np.double:
+    #     vR = vR.real
+    # vR_dm = np.einsum('ijg,jg->ig', vR, ao_dms)
+
+    # vk = weight * numpy.dot(vR_dm, ao1.T)
 
     # Function _ewald_exxdiv_for_G0 to add back in the G=0 component to vk_kpts
     # Note in the _ewald_exxdiv_for_G0 implementation, the G=0 treatments are

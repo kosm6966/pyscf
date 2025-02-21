@@ -939,7 +939,8 @@ def normalize_dm_(mf, dm, s1e=None):
                      'lead to instability in SCF for low-dimensional '
                      'systems.\n  DM is normalized wrt the number '
                      'of electrons %s', ne, cell.nelectron)
-        mo, occ = dm.mo_coeff, dm.mo_occ
+        mo, occ = dm.mo_coeff, dm.mo_occ ###
         dm *= cell.nelectron / ne
+        mo *= np.sqrt( cell.nelectron / ne ) ###
         dm = lib.tag_array(dm, mo_coeff=mo, mo_occ=occ)
     return dm

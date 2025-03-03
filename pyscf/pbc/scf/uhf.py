@@ -230,6 +230,14 @@ class UHF(pbchf.SCF):
         if s1e is None:
             s1e = self.get_ovlp(cell)
         dm = mol_uhf.UHF.get_init_guess(self, cell, key)
+
+        # import numpy as np
+        # coeff = [coeff[:,occ>0] for coeff, occ in zip(dm.mo_coeff, dm.mo_occ)]
+        # coeff = [np.array(mo.T, order='F') for mo in coeff]
+        # dm2 = [np.dot(mo.T,mo) for mo in coeff]
+        # print(np.allclose(dm[0],dm2[0]))
+        # print(np.allclose(dm[1],dm2[1]))
+
         ne = np.einsum('xij,ji->x', dm, s1e).real
         nelec = self.nelec
         if np.any(abs(ne - nelec) > 0.01):
@@ -239,7 +247,11 @@ class UHF(pbchf.SCF):
                          'lead to instability in SCF for low-dimensional '
                          'systems.\n  DM is normalized wrt the number '
                          'of electrons %s', ne, nelec)
-            dm *= (nelec / ne).reshape(2,1,1)
+            # dm *= (nelec / ne).reshape(2,1,1)
+            coeff, occ = dm.mo_coeff, dm.mo_occ ###
+            dm *= (cell.nelectron / ne).reshape(2,1,1)
+            coeff *= np.sqrt( cell.nelectron / ne ).reshape(2,1,1) ###
+            dm = lib.tag_array(dm, mo_coeff=coeff, mo_occ=occ)
         return dm
 
     def init_guess_by_1e(self, cell=None):

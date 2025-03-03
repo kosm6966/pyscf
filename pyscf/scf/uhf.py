@@ -114,7 +114,16 @@ def init_guess_by_chkfile(mol, chkfile_name, project=None):
     return dm
 
 def _break_dm_spin_symm(mol, dm, breaksym=1):
+    mo_coeff = dm.mo_coeff
+    mo_occ = dm.mo_occ
     dma, dmb = dm
+
+    # tol = 1.e-6
+    # coeff = [coeff[:,occ>tol] for coeff, occ in zip(dm.mo_coeff, dm.mo_occ)]
+    # dm2 = [numpy.dot(mo,mo.T) for mo in coeff]
+    # print(numpy.allclose(dm[0],dm2[0]))
+    # print(numpy.allclose(dm[1],dm2[1]))
+
     # For spin polarized system, no need to manually break spin symmetry
     if breaksym and mol.spin == 0 and abs(dma - dmb).max() < 1e-2:
         if breaksym == 1:
@@ -122,6 +131,12 @@ def _break_dm_spin_symm(mol, dm, breaksym=1):
             dmb = numpy.zeros_like(dma)
             for b0, b1, p0, p1 in mol.aoslice_by_atom():
                 dmb[...,p0:p1,p0:p1] = dma[...,p0:p1,p0:p1]
+
+            # mo_coeffb = numpy.zeros_like(dma)
+            # for b0, b1, p0, p1 in mol.aoslice_by_atom():
+            #     mo_coeffb[...,p0:p1,p0:p1] = mo_coeff[0][...,p0:p1,p0:p1]
+            # mo_coeff[1] = mo_coeffb
+
         else:
             # Adjust num. electrons for density matrices (issue #1839)
             # Get overlap matrix
@@ -131,7 +146,11 @@ def _break_dm_spin_symm(mol, dm, breaksym=1):
             # Scale density matrices to form doublet state
             dma = dma * (nelec_half+1) / nelec_half
             dmb = dmb * (nelec_half-1) / nelec_half
-    return dma, dmb
+
+            mo_coeff[0] = mo_coeff[0] * numpy.sqrt((nelec_half+1) / nelec_half)
+            mo_coeff[1] = mo_coeff[1] * numpy.sqrt((nelec_half-1) / nelec_half)
+    # return dma, dmb
+    return lib.tag_array((dma, dmb), mo_coeff=mo_coeff, mo_occ=mo_occ)
 
 def get_init_guess(mol, key='minao', **kwargs):
     return UHF(mol).get_init_guess(mol, key, **kwargs)
@@ -840,6 +859,14 @@ class UHF(hf.SCF):
 
     def get_init_guess(self, mol=None, key='minao', **kwargs):
         dm = hf.SCF.get_init_guess(self, mol, key, **kwargs)
+
+        # import numpy as np
+        # coeff = [coeff[:,occ>0] for coeff, occ in zip(dm.mo_coeff, dm.mo_occ)]
+        # coeff = [np.array(mo.T, order='F') for mo in coeff]
+        # dm2 = [np.dot(mo.T,mo) for mo in coeff]
+        # print(np.allclose(dm[0],dm2[0]))
+        # print(np.allclose(dm[1],dm2[1]))
+        
         if self.verbose >= logger.DEBUG1:
             s = self.get_ovlp()
             nelec =(numpy.einsum('ij,ji', dm[0], s).real,
@@ -894,10 +921,19 @@ employing the updated GWH rule from doi:10.1021/ja00480a005.''')
         mo_energy = (mo_energy, mo_energy)
         mo_coeff = (mo_coeff, mo_coeff)
         mo_occ = self.get_occ(mo_energy, mo_coeff)
-        dma, dmb = self.make_rdm1(mo_coeff, mo_occ)
+        # dma, dmb = self.make_rdm1(mo_coeff, mo_occ)
+        dm = self.make_rdm1(mo_coeff, mo_occ)
+
+        # import numpy as np
+        # coeff = [coeff[:,occ>0] for coeff, occ in zip(dm.mo_coeff, dm.mo_occ)]
+        # coeff = [np.array(mo.T, order='F') for mo in coeff]
+        # dm2 = [np.dot(mo.T,mo) for mo in coeff]
+        # print(np.allclose(dm[0],dm2[0]))
+        # print(np.allclose(dm[1],dm2[1]))
+
         if breaksym:
-            dma, dmb = _break_dm_spin_symm(mol, (dma, dmb), breaksym)
-        return numpy.array((dma,dmb))
+            dm = _break_dm_spin_symm(mol, dm, breaksym)
+        return dm
 
     def init_guess_by_1e(self, mol=None, breaksym=None):
         if mol is None: mol = self.mol
@@ -909,11 +945,22 @@ employing the updated GWH rule from doi:10.1021/ja00480a005.''')
             h1e = (h1e, h1e)
         mo_energy, mo_coeff = self.eig(h1e, s1e)
         mo_occ = self.get_occ(mo_energy, mo_coeff)
-        dma, dmb = self.make_rdm1(mo_coeff, mo_occ)
+        # dma, dmb = self.make_rdm1(mo_coeff, mo_occ)
+        dm = self.make_rdm1(mo_coeff, mo_occ)
+
+        # import numpy as np
+        # coeff = [coeff[:,occ>0] for coeff, occ in zip(dm.mo_coeff, dm.mo_occ)]
+        # coeff = [np.array(mo.T, order='F') for mo in coeff]
+        # dm2 = [np.dot(mo.T,mo) for mo in coeff]
+        # print(np.allclose(dm[0],dm2[0]))
+        # print(np.allclose(dm[1],dm2[1]))
+
         natm = getattr(mol, 'natm', 0)  # handle custom Hamiltonian
         if natm > 0 and breaksym:
-            dma, dmb = _break_dm_spin_symm(mol, (dma, dmb), breaksym)
-        return numpy.array((dma,dmb))
+            # dma, dmb = _break_dm_spin_symm(mol, (dm[0], dm[1]), breaksym)
+            dm = _break_dm_spin_symm(mol, dm, breaksym)
+        return dm
+        # return numpy.array((dma,dmb))
 
     def init_guess_by_sap(self, mol=None, breaksym=None, **kwargs):
         from pyscf.gto.basis import load

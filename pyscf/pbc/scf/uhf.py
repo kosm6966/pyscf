@@ -247,13 +247,9 @@ class UHF(pbchf.SCF):
                          'lead to instability in SCF for low-dimensional '
                          'systems.\n  DM is normalized wrt the number '
                          'of electrons %s', ne, nelec)
-            # dm *= (nelec / ne).reshape(2,1,1)
             coeff, occ = dm.mo_coeff, dm.mo_occ ###
             dm *= (nelec / ne).reshape(2,1,1)
-            if coeff.ndim == 2:
-                coeff *= np.sqrt( nelec / ne )[0]
-            else:
-                coeff *= np.sqrt( nelec / ne ).reshape(2,1,1) ###
+            occ *= ( nelec / ne ).reshape(2,1,) ###
             dm = lib.tag_array(dm, mo_coeff=coeff, mo_occ=occ)
         return dm
 

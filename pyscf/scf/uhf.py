@@ -116,26 +116,33 @@ def init_guess_by_chkfile(mol, chkfile_name, project=None):
 def _break_dm_spin_symm(mol, dm, breaksym=1):
     mo_coeff = dm.mo_coeff
     mo_occ = dm.mo_occ
+
+    # if dm.mo_occ.ndim == 1:
+    #     mo_occ = numpy.vstack([mo_occ, mo_occ])
+
+    # if dm.mo_coeff.ndim == 2:
+    #     mo_coeff = numpy.array([mo_coeff, mo_coeff]).reshape(2,mol.nao,mol.nao)    
+    
     dma, dmb = dm
 
     # tol = 1.e-6
-    # coeff = [coeff[:,occ>tol] for coeff, occ in zip(dm.mo_coeff, dm.mo_occ)]
+    # coeff = [coeff[:,occ>tol] * numpy.sqrt(occ[occ>tol]) for coeff, occ in zip(mo_coeff, mo_occ)]
     # dm2 = [numpy.dot(mo,mo.T) for mo in coeff]
-    # print(numpy.allclose(dm[0],dm2[0]))
-    # print(numpy.allclose(dm[1],dm2[1]))
+    # print(numpy.allclose(dma,dm2[0]))
+    # print(numpy.allclose(dmb,dm2[1]))
 
     # For spin polarized system, no need to manually break spin symmetry
     if breaksym and mol.spin == 0 and abs(dma - dmb).max() < 1e-2:
         if breaksym == 1:
             #remove off-diagonal part of beta DM
             dmb = numpy.zeros_like(dma)
+            mo_occ_beta_mod = numpy.zeros_like(mo_occ[1])
             for b0, b1, p0, p1 in mol.aoslice_by_atom():
                 dmb[...,p0:p1,p0:p1] = dma[...,p0:p1,p0:p1]
-
-            # mo_coeffb = numpy.zeros_like(dma)
-            # for b0, b1, p0, p1 in mol.aoslice_by_atom():
-            #     mo_coeffb[...,p0:p1,p0:p1] = mo_coeff[0][...,p0:p1,p0:p1]
-            # mo_coeff[1] = mo_coeffb
+            
+            for b0, b1, p0, p1 in mol.aoslice_by_atom():
+                mo_occ_beta_mod[p0:p1] = mo_occ[0][p0:p1]  # Copy AO block from alpha to beta
+            mo_occ[1] = mo_occ_beta_mod
         else:
             # Adjust num. electrons for density matrices (issue #1839)
             # Get overlap matrix
@@ -145,9 +152,9 @@ def _break_dm_spin_symm(mol, dm, breaksym=1):
             # Scale density matrices to form doublet state
             dma = dma * (nelec_half+1) / nelec_half
             dmb = dmb * (nelec_half-1) / nelec_half
-
-            mo_coeff[0] = mo_coeff[0] * numpy.sqrt((nelec_half+1) / nelec_half)
-            mo_coeff[1] = mo_coeff[1] * numpy.sqrt((nelec_half-1) / nelec_half)
+            #### APPLY TO MO COEFF OR MO OCC???? ####
+            mo_occ[0] = mo_occ[0] * (nelec_half+1) / nelec_half
+            mo_occ[1] = mo_occ[1] * (nelec_half-1) / nelec_half
     # return dma, dmb
     return lib.tag_array((dma, dmb), mo_coeff=mo_coeff, mo_occ=mo_occ)
 
@@ -880,9 +887,11 @@ class UHF(hf.SCF):
         # For spin polarized system, no need to manually break spin symmetry
         dm = hf.init_guess_by_minao(mol)
         dma = dmb = dm*.5
+        moa = mob = dm.mo_coeff
+        occa = occb = dm.mo_occ*.5
         # dma, dmb = _break_dm_spin_symm(mol, (dma, dmb), breaksym)
         # return numpy.array((dma, dmb))
-        dm = lib.tag_array((dma, dmb), mo_coeff=dm.mo_coeff, mo_occ=dm.mo_occ)
+        dm = lib.tag_array((dma, dmb), mo_coeff=numpy.array((moa, mob)), mo_occ=numpy.array((occa, occb)))
         dm = _break_dm_spin_symm(mol, dm, breaksym)
         return dm    
 

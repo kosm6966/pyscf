@@ -941,6 +941,6 @@ def normalize_dm_(mf, dm, s1e=None):
                      'of electrons %s', ne, cell.nelectron)
         mo, occ = dm.mo_coeff, dm.mo_occ ###
         dm *= cell.nelectron / ne
-        mo *= np.sqrt( cell.nelectron / ne ) ###
+        occ *= cell.nelectron / ne ###
         dm = lib.tag_array(dm, mo_coeff=mo, mo_occ=occ)
     return dm

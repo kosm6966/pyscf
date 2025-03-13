@@ -249,8 +249,11 @@ class UHF(pbchf.SCF):
                          'of electrons %s', ne, nelec)
             # dm *= (nelec / ne).reshape(2,1,1)
             coeff, occ = dm.mo_coeff, dm.mo_occ ###
-            dm *= (cell.nelectron / ne).reshape(2,1,1)
-            coeff *= np.sqrt( cell.nelectron / ne ).reshape(2,1,1) ###
+            dm *= (nelec / ne).reshape(2,1,1)
+            if coeff.ndim == 2:
+                coeff *= np.sqrt( nelec / ne )[0]
+            else:
+                coeff *= np.sqrt( nelec / ne ).reshape(2,1,1) ###
             dm = lib.tag_array(dm, mo_coeff=coeff, mo_occ=occ)
         return dm
 

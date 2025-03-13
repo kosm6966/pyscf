@@ -136,7 +136,6 @@ def _break_dm_spin_symm(mol, dm, breaksym=1):
             # for b0, b1, p0, p1 in mol.aoslice_by_atom():
             #     mo_coeffb[...,p0:p1,p0:p1] = mo_coeff[0][...,p0:p1,p0:p1]
             # mo_coeff[1] = mo_coeffb
-
         else:
             # Adjust num. electrons for density matrices (issue #1839)
             # Get overlap matrix
@@ -881,8 +880,11 @@ class UHF(hf.SCF):
         # For spin polarized system, no need to manually break spin symmetry
         dm = hf.init_guess_by_minao(mol)
         dma = dmb = dm*.5
-        dma, dmb = _break_dm_spin_symm(mol, (dma, dmb), breaksym)
-        return numpy.array((dma, dmb))
+        # dma, dmb = _break_dm_spin_symm(mol, (dma, dmb), breaksym)
+        # return numpy.array((dma, dmb))
+        dm = lib.tag_array((dma, dmb), mo_coeff=dm.mo_coeff, mo_occ=dm.mo_occ)
+        dm = _break_dm_spin_symm(mol, dm, breaksym)
+        return dm    
 
     def init_guess_by_atom(self, mol=None, breaksym=None):
         if mol is None: mol = self.mol

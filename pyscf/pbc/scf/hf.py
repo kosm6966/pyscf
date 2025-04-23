@@ -677,7 +677,7 @@ class SCF(mol_hf.SCF):
             mo_occ = getattr(dm, 'mo_occ', None)
             vj, vk = self.with_df.get_jk(lib.tag_array(dm.reshape(-1,nao,nao), mo_coeff=mo_coeff, mo_occ=mo_occ),
                                          hermi, kpt, kpts_band,
-                                         with_j, with_k, omega, exxdiv=self.exxdiv)
+                                         with_j, with_k, omega=omega, exxdiv=self.exxdiv)
 
         if with_j:
             vj = _format_jks(vj, dm, kpts_band)

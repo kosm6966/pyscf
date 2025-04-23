@@ -486,7 +486,7 @@ def get_pp(mydf, kpts=None, max_memory=4000):
         SPG_lm_aoGs=None
         return vppnl * (1./ngrids**2)
 
-    if mydf.vppnl_ver==0:
+    if getattr(mydf, 'vppnl_ver', None)==0:
         print("Vppnl from Multigrid v1!")
         fn = vppnl_by_k
     else:

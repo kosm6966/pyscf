@@ -231,13 +231,6 @@ class UHF(pbchf.SCF):
             s1e = self.get_ovlp(cell)
         dm = mol_uhf.UHF.get_init_guess(self, cell, key)
 
-        # import numpy as np
-        # coeff = [coeff[:,occ>0] for coeff, occ in zip(dm.mo_coeff, dm.mo_occ)]
-        # coeff = [np.array(mo.T, order='F') for mo in coeff]
-        # dm2 = [np.dot(mo.T,mo) for mo in coeff]
-        # print(np.allclose(dm[0],dm2[0]))
-        # print(np.allclose(dm[1],dm2[1]))
-
         ne = np.einsum('xij,ji->x', dm, s1e).real
         nelec = self.nelec
         if np.any(abs(ne - nelec) > 0.01):

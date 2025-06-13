@@ -114,47 +114,48 @@ def init_guess_by_chkfile(mol, chkfile_name, project=None):
     return dm
 
 def _break_dm_spin_symm(mol, dm, breaksym=1):
-    mo_coeff = dm.mo_coeff
-    mo_occ = dm.mo_occ
-
-    # if dm.mo_occ.ndim == 1:
-    #     mo_occ = numpy.vstack([mo_occ, mo_occ])
-
-    # if dm.mo_coeff.ndim == 2:
-    #     mo_coeff = numpy.array([mo_coeff, mo_coeff]).reshape(2,mol.nao,mol.nao)    
-    
+    coeff_a, coeff_b = dm.mo_coeff
+    occ_a, occ_b = dm.mo_occ
     dma, dmb = dm
-
-    # tol = 1.e-6
-    # coeff = [coeff[:,occ>tol] * numpy.sqrt(occ[occ>tol]) for coeff, occ in zip(mo_coeff, mo_occ)]
-    # dm2 = [numpy.dot(mo,mo.T) for mo in coeff]
-    # print(numpy.allclose(dma,dm2[0]))
-    # print(numpy.allclose(dmb,dm2[1]))
-
     # For spin polarized system, no need to manually break spin symmetry
     if breaksym and mol.spin == 0 and abs(dma - dmb).max() < 1e-2:
+        # Get overlap matrix
+        s1e = mol.intor_symmetric('int1e_ovlp')
         if breaksym == 1:
             #remove off-diagonal part of beta DM
             dmb = numpy.zeros_like(dma)
-            mo_occ_beta_mod = numpy.zeros_like(mo_occ[1])
             for b0, b1, p0, p1 in mol.aoslice_by_atom():
                 dmb[...,p0:p1,p0:p1] = dma[...,p0:p1,p0:p1]
-                mo_occ_beta_mod[p0:p1] = mo_occ[0][p0:p1]  # Copy AO block from alpha to beta
-            mo_occ[1] = mo_occ_beta_mod
+            occ_b, coeff_b = make_natural_orbitals(dmb, s1e)
+            occ_a, coeff_a = make_natural_orbitals(dma, s1e) ## <- Added this b.c. can be different sizes. 
+            # dma2, dmb2 = make_rdm1((coeff_a,coeff_b), (occ_a,occ_b), )
+            # print("Reconstruction error dmb:", numpy.linalg.norm(dmb - dmb2))
+            # print("Reconstruction error dmb:", numpy.linalg.norm(dma - dma2))            
         else:
             # Adjust num. electrons for density matrices (issue #1839)
-            # Get overlap matrix
-            s1e = mol.intor_symmetric('int1e_ovlp')
             # Compute norm of density matrices
             nelec_half = numpy.einsum('ij,ji->', dma, s1e)
             # Scale density matrices to form doublet state
             dma = dma * (nelec_half+1) / nelec_half
             dmb = dmb * (nelec_half-1) / nelec_half
             #### APPLY TO MO OCC ####
-            mo_occ[0] *= (nelec_half+1) / nelec_half
-            mo_occ[1] *= (nelec_half-1) / nelec_half
+            occ_a *= (nelec_half+1) / nelec_half
+            occ_b *= (nelec_half-1) / nelec_half
     # return dma, dmb
-    return lib.tag_array((dma, dmb), mo_coeff=mo_coeff, mo_occ=mo_occ)
+    return lib.tag_array((dma, dmb), mo_coeff=numpy.asarray([coeff_a,coeff_b]), 
+                         mo_occ=numpy.asarray([occ_a,occ_b]))
+
+def make_natural_orbitals(dm, S):
+    #also see: make_natorbs
+    # Diagonalize the DM in AO (using Eqn. (1) referenced above)
+    A = lib.reduce(numpy.dot, (S, dm, S))
+    w, v = scipy.linalg.eigh(A, b=S)
+
+    # Flip NOONs (and NOs) since they're in increasing order
+    occ = numpy.flip(w)
+    occ[occ<1.e-6] = 0.
+    coeff = numpy.flip(v, axis=1)
+    return occ, coeff
 
 def get_init_guess(mol, key='minao', **kwargs):
     return UHF(mol).get_init_guess(mol, key, **kwargs)
@@ -863,13 +864,6 @@ class UHF(hf.SCF):
 
     def get_init_guess(self, mol=None, key='minao', **kwargs):
         dm = hf.SCF.get_init_guess(self, mol, key, **kwargs)
-
-        # import numpy as np
-        # coeff = [coeff[:,occ>0] for coeff, occ in zip(dm.mo_coeff, dm.mo_occ)]
-        # coeff = [np.array(mo.T, order='F') for mo in coeff]
-        # dm2 = [np.dot(mo.T,mo) for mo in coeff]
-        # print(np.allclose(dm[0],dm2[0]))
-        # print(np.allclose(dm[1],dm2[1]))
         
         if self.verbose >= logger.DEBUG1:
             s = self.get_ovlp()
@@ -957,15 +951,7 @@ employing the updated GWH rule from doi:10.1021/ja00480a005.''')
             h1e = (h1e, h1e)
         mo_energy, mo_coeff = self.eig(h1e, s1e)
         mo_occ = self.get_occ(mo_energy, mo_coeff)
-        # dma, dmb = self.make_rdm1(mo_coeff, mo_occ)
         dm = self.make_rdm1(mo_coeff, mo_occ)
-
-        # import numpy as np
-        # coeff = [coeff[:,occ>0] for coeff, occ in zip(dm.mo_coeff, dm.mo_occ)]
-        # coeff = [np.array(mo.T, order='F') for mo in coeff]
-        # dm2 = [np.dot(mo.T,mo) for mo in coeff]
-        # print(np.allclose(dm[0],dm2[0]))
-        # print(np.allclose(dm[1],dm2[1]))
 
         natm = getattr(mol, 'natm', 0)  # handle custom Hamiltonian
         if natm > 0 and breaksym:

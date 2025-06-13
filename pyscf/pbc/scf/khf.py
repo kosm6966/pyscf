@@ -754,6 +754,7 @@ class KRHF(KSCF):
             # dm[nao,nao] at gamma point -> dm_kpts[nkpts,nao,nao]
             dm = np.repeat(dm[None,:,:], nkpts, axis=0)
         dm_kpts = dm
+        mo_coeff, mo_occ = dm.mo_coeff, dm.mo_occ
 
         ne = lib.einsum('kij,kji->', dm_kpts, s1e).real
         # FIXME: consider the fractional num_electron or not? This maybe
@@ -766,9 +767,10 @@ class KRHF(KSCF):
                          'lead to instability in SCF for low-dimensional '
                          'systems.\n  DM is normalized wrt the number '
                          'of electrons %s', ne/nkpts, nelectron/nkpts)
+            mo_occ *= (nelectron / ne).reshape(-1,1,1)
             dm_kpts *= (nelectron / ne).reshape(-1,1,1)
         # return dm_kpts
-        return lib.tag_array(dm_kpts,mo_coeff=dm.mo_coeff,mo_occ=dm.mo_occ)
+        return lib.tag_array(dm_kpts,mo_coeff=mo_coeff,mo_occ=mo_occ)
 
     @lib.with_doc(mulliken_meta.__doc__)
     def mulliken_meta(self, cell=None, dm=None, kpts=None, verbose=logger.DEBUG,

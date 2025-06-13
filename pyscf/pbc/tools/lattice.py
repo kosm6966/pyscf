@@ -112,7 +112,7 @@ def get_ase_rocksalt(A='Li', B='Cl'):
     # Add Na, K
     assert B in ['H', 'F', 'Cl', 'O']
     # Add Br, I
-    from ase.lattice import bulk
+    from ase.build import bulk
     if A=='Li':
         if B=='H':
             ase_atom = bulk('LiH', 'rocksalt', a=4.0834*A2B)

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required (VERSION 3.22)
+cmake_minimum_required(VERSION 3.5...4.0)
 project (pyscf)
 
 include(CheckSymbolExists)
@@ -207,7 +207,7 @@ endif() # BUILD_LIBCINT
 
 option(ENABLE_LIBXC "Using libxc for XC functional library" ON)
 option(ENABLE_XCFUN "Using xcfun for XC functional library" ON)
-option(BUILD_LIBXC "Download and build libxc library" ON)
+option(BUILD_LIBXC "Download and build libxc library" OFF)
 option(BUILD_XCFUN "Download and build xcfun library" ON)
 
 option(ENABLE_LIBXSMM "Using libxsmm" OFF)

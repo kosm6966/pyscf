@@ -646,7 +646,7 @@ class SCF(mol_hf.SCF):
 
         if (not omega and kpts_band is None and
             # TODO: generate AO integrals with rsjk algorithm
-            not self.rsjk and
+            not self.rsjk and not self.with_df and
             (self.exxdiv == 'ewald' or not self.exxdiv) and
             (self._eri is not None or cell.incore_anyway or
              self._is_mem_enough())):

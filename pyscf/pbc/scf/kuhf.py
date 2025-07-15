@@ -443,9 +443,13 @@ class KUHF(khf.KSCF):
         dm_kpts = mol_hf.SCF.get_init_guess(self, cell, key)
         assert dm_kpts.shape[0] == 2
         nkpts = len(self.kpts)
+        mo_occ_kpts = np.asarray(dm_kpts.mo_occ)
+        mo_coeff_kpts = np.asarray(dm_kpts.mo_coeff)
         if dm_kpts.ndim != 4:
             # dm[spin,nao,nao] at gamma point -> dm_kpts[spin,nkpts,nao,nao]
             dm_kpts = np.repeat(dm_kpts[:,None,:,:], nkpts, axis=1)
+            mo_occ_kpts = np.repeat(mo_occ_kpts[:,None,:], nkpts, axis=1)
+            mo_coeff_kpts = np.repeat(mo_coeff_kpts[:,None,:,:], nkpts, axis=1)
 
         ne = lib.einsum('xkij,kji->x', dm_kpts, s1e).real
         nelec = np.asarray(self.nelec)
@@ -457,7 +461,8 @@ class KUHF(khf.KSCF):
                          'systems.\n  DM is normalized wrt the number '
                          'of electrons %s', ne.mean()/nkpts, nelec/nkpts)
             dm_kpts *= (nelec / ne).reshape(2,-1,1,1)
-        return dm_kpts
+            mo_occ_kpts *= (nelec / ne).reshape(2,-1,1)
+        return lib.tag_array(dm_kpts, mo_coeff=mo_coeff_kpts, mo_occ=mo_occ_kpts)
 
     def get_veff(self, cell=None, dm_kpts=None, dm_last=0, vhf_last=0, hermi=1,
                  kpts=None, kpts_band=None):

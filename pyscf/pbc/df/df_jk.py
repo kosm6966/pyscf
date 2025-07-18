@@ -1467,7 +1467,7 @@ def _format_jks(v_kpts, dm_kpts, kpts_band, kpts):
 
 def _ewald_exxdiv_for_G0(cell, kpts, dms, vk, kpts_band=None):
     s = cell.pbc_intor('int1e_ovlp', hermi=1, kpts=kpts)
-    madelung = tools.pbc.madelung(cell, kpts)
+    madelung = tools.pbc.madelung(cell, kpts) # Consider kpts == None!!!
     if kpts is None:
         for i,dm in enumerate(dms):
             vk[i] += madelung * reduce(numpy.dot, (s, dm, s))

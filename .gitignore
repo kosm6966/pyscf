@@ -22,6 +22,10 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+lib/
+bin/
+pyvenv.cfg
+pyscf.code-workspace
 
 # Local log files
 *~

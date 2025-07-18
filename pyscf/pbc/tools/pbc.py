@@ -547,7 +547,7 @@ def precompute_exx(cell, kpts):
     return ws_exx
 
 
-def madelung(cell, kpts, omega=None):
+def madelung(cell, kpts, omega=None): # Consider kpts=None
     Nk = get_monkhorst_pack_size(cell, kpts)
     ecell = cell.copy(deep=False)
     ecell._atm = np.array([[1, cell._env.size, 0, 0, 0, 0]])
